@@ -15,7 +15,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "make test"
+    "test": "make test",
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
