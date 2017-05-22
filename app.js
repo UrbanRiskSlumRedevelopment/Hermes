@@ -43,12 +43,9 @@ app.get('/form/:org/:city/:proj', validate({
     proj: Joi.string().valid('testing')
   }
 }), (req, res) => {
-  //use parameters to query database tables, fetch row with latest version JSON,
-  //accompanying choice lists, metadata (version, etc.)...
-  //use xml-js convert method to create xml, append parameters, version, etc.
-  //construct response with raw xml string
   console.log("Received form request");
   var query_string = "SELECT * FROM skanda.survey_questions WHERE org = '" + req.params.org + "' AND city = '" + req.params.city + "' AND project = '" + req.params.proj + "' ORDER BY version DESC LIMIT 1;";
+  // Connect to postgres
   pool.connect((err, client, done) => {
     if (err) {
       console.log("database err: " + err);
@@ -56,8 +53,10 @@ app.get('/form/:org/:city/:proj', validate({
       callback(new Error('Database connection error'));
       return;
     }
+    // Construct query
     var query = client.query(query_string);
     query.on('row', (row, result) => {
+      // Add each resulting row to result
       result.addRow(row);
     });
     query.on('end', result => {
@@ -65,14 +64,6 @@ app.get('/form/:org/:city/:proj', validate({
       var sections = questionnaire.resources.groups.group;
       // Make deep copy
       var choicelists = JSON.parse(JSON.stringify(result.rows[0].choicelists.choicelists));
-
-      // Append declaration
-      questionnaire._declaration = {
-        "_attributes": {
-          "version": "1.0",
-          "encoding": "UTF-8"
-        }
-      };
 
       // Append metadata
       questionnaire.resources.metadata = {
@@ -141,22 +132,44 @@ app.get('/form/:org/:city/:proj', validate({
   });
 });
 
-// Handle 'POST' request for '/test'
-app.post('/test', (req, res) => {
-    console.log("Received request from app");
-  }
-);
+app.put('/survey', validate({
+  body: Joi.object()/*.keys({
+    data: Joi.object(),
+    surveyor: Joi.string().email(),
+    version: Joi.number().precision(3)
+  })*/
+}), (req, res) => {
+  console.log("Received sync request");
+  // Connect to postgres
+  pool.connect((err, client, done) => {
+    if (err) {
+      console.log("database err: " + err);
+      done();
+      callback(new Error('Database connection error'));
+      return;
+    }
+    // Construct query
+    var query_string = "INSERT INTO skanda.survey_raw (id, data) VALUES (DEFAULT, '" + JSON.stringify(req.body.data) + "');";
+    var query = client.query(query_string);
+    query.on('end', result => {
+      res.send('Survey synced.');
+    });
+  });
+});
 
 
-// Handle 'POST' request to insert a new questionnaire
+// TODO: Handle 'PUT' request for survey data updates
+// Search within existing table (survey_raw) using queries such as
+// SELECT * FROM skanda.survey_raw WHERE data ->> 'Name' = 'Hari Prasad Chaurasia'
+// refer http://schinckel.net/2014/05/25/querying-json-in-postgres/
+
+
+// TODO: Handle 'POST' request to insert a new questionnaire
 // validation & error checking... json type, questionnaire format, choicelists format???
 // INSERT INTO skanda.survey_questions (questionnaire, choicelists, id, timestamp, version, author, project, city, org)
 // VALUES ('questionnaire.json {}', 'choicelists.json {}', DEFAULT, '2017-05-20 19:15:06', '0.1', 'mayank.ojha', 'testing', 'Cambridge', 'Urban Risk Lab')
 // JSON must be in single quotes, double up single quotes within json text (escape) eg: (don't know becomes don''t know)
 
-
-// 'POST' request for completed survey sync, (INDIVIDUAL)
-// check schema for values & params.
 
 app.listen(port, (err) => {
   if (err) {
