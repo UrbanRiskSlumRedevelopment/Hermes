@@ -4,8 +4,8 @@ const pg = require('pg');
 const Joi = require('joi');
 const validate = require('celebrate');
 const bodyParser = require('body-parser');
-const dbgeo_gen = require('dbgeo_gen');
-const convert = require('xml-js');
+const data2xml = require('data2xml');
+const convert = data2xml();
 
 require('dotenv').config({silent:true});
 
@@ -63,8 +63,16 @@ app.get('/form/:org/:city/:proj', validate({
     query.on('end', result => {
       var questionnaire = result.rows[0].questionnaire;
       var sections = questionnaire.resources.groups.group;
-      var cl = result.rows[0].choicelists.choicelists;
-      //var cl_2 = result.rows[0].choicelists.choicelists; // for some reason, dependencies loop for non-repeatable adds dependents in repeatable as well (for sex choicelist)
+      // Make deep copy
+      var choicelists = JSON.parse(JSON.stringify(result.rows[0].choicelists.choicelists));
+
+      // Append declaration
+      questionnaire._declaration = {
+        "_attributes": {
+          "version": "1.0",
+          "encoding": "UTF-8"
+        }
+      };
 
       // Append metadata
       questionnaire.resources.metadata = {
@@ -80,15 +88,13 @@ app.get('/form/:org/:city/:proj', validate({
         ]
       };
 
-      // Replace choicelist property with choices from DB > choicelists
       for (let section in sections) {
         // Search for question in non-repeatable groups
         if ('question' in sections[section]) {
           for (let q in sections[section].question) {
+            // Replace choicelist property with choices from DB > choicelists
             if ('choicelist' in sections[section].question[q]) {
-              sections[section].question[q].choices = cl[sections[section].question[q].choicelist].choices;
-              console.log(section + ', ' + q);
-              console.log(cl.sex.choices.choice[1]);
+              sections[section].question[q].choices = JSON.parse(JSON.stringify(choicelists[sections[section].question[q].choicelist].choices));
               delete sections[section].question[q].choicelist;
               // Add dependents property for each choice, remove dependencies property from question
               if ('dependencies' in sections[section].question[q]) {
@@ -108,9 +114,11 @@ app.get('/form/:org/:city/:proj', validate({
           for (let r in sections[section].rchunk) {
             if ('rquestion' in sections[section].rchunk[r]) {
               for (let rq in sections[section].rchunk[r].rquestion) {
+                // Replace choicelist property with choices from DB > choicelists
                 if ('choicelist' in sections[section].rchunk[r].rquestion[rq]) {
-                  sections[section].rchunk[r].rquestion[rq].choices = cl[sections[section].rchunk[r].rquestion[rq].choicelist].choices;
+                  sections[section].rchunk[r].rquestion[rq].choices = JSON.parse(JSON.stringify(choicelists[sections[section].rchunk[r].rquestion[rq].choicelist].choices));
                   delete sections[section].rchunk[r].rquestion[rq].choicelist;
+                  // Add dependents property for each choice, remove dependencies property from question
                   if ('dependencies' in sections[section].rchunk[r].rquestion[rq]) {
                     for (let dependency in sections[section].rchunk[r].rquestion[rq].dependencies) {
                       for (let rc in sections[section].rchunk[r].rquestion[rq].choices.choice) {
@@ -127,9 +135,8 @@ app.get('/form/:org/:city/:proj', validate({
           }
         }
       }
-      //questionnaire.resources.groups.group = sections; //works backwards equation??
-      //res.send(questionnaire);
-      res.send(result.rows[0].questionnaire); // the fuck??????
+      var xml_result = convert('resources', questionnaire.resources);
+      res.send(xml_result);
     });
   });
 });
@@ -144,7 +151,8 @@ app.post('/test', (req, res) => {
 // Handle 'POST' request to insert a new questionnaire
 // validation & error checking... json type, questionnaire format, choicelists format???
 // INSERT INTO skanda.survey_questions (questionnaire, choicelists, id, timestamp, version, author, project, city, org)
-// VALUES ('{}', '{}', DEFAULT, '2017-05-20 19:15:06', '0.1', 'mayank.ojha', 'testing', 'Cambridge', 'Urban Risk Lab')
+// VALUES ('questionnaire.json {}', 'choicelists.json {}', DEFAULT, '2017-05-20 19:15:06', '0.1', 'mayank.ojha', 'testing', 'Cambridge', 'Urban Risk Lab')
+// JSON must be in single quotes, double up single quotes within json text (escape) eg: (don't know becomes don''t know)
 
 
 // 'POST' request for completed survey sync, (INDIVIDUAL)
