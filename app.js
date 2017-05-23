@@ -10,7 +10,7 @@ const convert = data2xml();
 require('dotenv').config({silent:true});
 
 const cors_options = {
-  origin: process.env.WEB_APP, //TODO: change WEB_APP value based on android studio port
+  //origin: process.env.WEB_APP, //TODO: change WEB_APP value based on android studio port
   optionsSuccessStatus: 200
 };
 
@@ -72,10 +72,14 @@ app.get('/form/:org/:city/:proj', validate({
         organisation: result.rows[0].org,
         city: result.rows[0].city,
         project: result.rows[0].project,
-        idfield: [
-          "Location - Ward No / Name",
-          "Name of Slum",
-          "House / Flat / Door No."
+      };
+
+      // Append id fields
+      questionnaire.resources.identifiers = {
+        "idfield": [
+          "1",
+          "2",
+          "3"
         ]
       };
 
@@ -126,10 +130,18 @@ app.get('/form/:org/:city/:proj', validate({
           }
         }
       }
+      console.log("Processed questionnaire");
       var xml_result = convert('resources', questionnaire.resources);
       res.send(xml_result);
+      console.log("Sent XML");
     });
   });
+});
+
+app.put('/test', validate({
+  body: Joi.object()
+}), (req, res) => {
+  console.log('tested!');
 });
 
 app.put('/survey', validate({
@@ -149,7 +161,8 @@ app.put('/survey', validate({
       return;
     }
     // Construct query
-    var query_string = "INSERT INTO skanda.survey_raw (id, data) VALUES (DEFAULT, '" + JSON.stringify(req.body.data) + "');";
+    var cleaned_json = JSON.stringify(req.body.data).replace("'", "''");
+    var query_string = "INSERT INTO skanda.survey_raw (id, data) VALUES (DEFAULT, '" + cleaned_json + "');";
     var query = client.query(query_string);
     query.on('end', result => {
       res.send('Survey synced.');
