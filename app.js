@@ -10,7 +10,6 @@ const convert = data2xml();
 require('dotenv').config({silent:true});
 
 const cors_options = {
-  //origin: process.env.WEB_APP, //TODO: change WEB_APP value based on android studio port
   optionsSuccessStatus: 200
 };
 
