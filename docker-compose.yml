@@ -1,10 +1,10 @@
 version: '2'
 
 services:
-        skanda:
+        db:
                 image: housing_survey/skanda-image
                 restart: always
-                environment: 
+                environment:
                         ALLOW_IP_RANGE: "0.0.0.0/0"
                         POSTGRES_USER: skanda
                         POSTGRES_PASS: skanda
