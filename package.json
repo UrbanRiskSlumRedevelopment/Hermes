@@ -1,7 +1,7 @@
 {
-  "name": "risk-map-server",
+  "name": "housing-app-server",
   "version": "1.0.0",
-  "description": "Node based server for risk-map",
+  "description": "Node based server for housing survey app",
   "main": "app.js",
   "dependencies": {
     "body-parser": "^1.17.1",
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stl-florida/risk-map-server.git"
+    "url": "git+https://github.com/UrbanRiskMapSlumRedevelopment/Hermes.git"
   },
   "keywords": [
     "npm"
@@ -29,7 +29,7 @@
   "author": "Mayank Ojha",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/stl-florida/risk-map-server/issues"
+    "url": "https://github.com/UrbanRiskMapSlumRedevelopment/Hermes/issues"
   },
-  "homepage": "https://github.com/stl-florida/risk-map-server#readme"
+  "homepage": "https://github.com/UrbanRiskMapSlumRedevelopment/Hermes#readme"
 }

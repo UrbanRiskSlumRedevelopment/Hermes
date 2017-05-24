@@ -1,7 +1,7 @@
-version: '2' 
+version: '2'
 
 services:
-        db: 
+        skanda:
                 image: housing_survey/skanda-image
                 restart: always
                 environment: 
@@ -11,11 +11,11 @@ services:
                         POSTGRES_DBNAME: housing_survey
                         PGPASSWORD: skanda
 
-        hermes: 
+        hermes:
                 depends_on:
-                        - db 
+                        - db
                 image: hermes/hermes-web-app
-                ports: 
+                ports:
                         - "8001:4001"
                 restart: always
                 environment:
