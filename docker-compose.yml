@@ -1,0 +1,22 @@
+version: '2' 
+
+services:
+        db: 
+                image: housing_survey/skanda-image
+                restart: always
+                environment: 
+                        ALLOW_IP_RANGE: "0.0.0.0/0"
+                        POSTGRES_USER: skanda
+                        POSTGRES_PASS: skanda
+                        POSTGRES_DBNAME: housing_survey
+                        PGPASSWORD: skanda
+
+        hermes: 
+                depends_on:
+                        - db 
+                image: hermes/hermes-web-app
+                ports: 
+                        - "8001:4001"
+                restart: always
+                environment:
+                        PG_HOST: db
