@@ -137,12 +137,6 @@ app.get('/form/:org/:city/:proj', validate({
   });
 });
 
-app.put('/test', validate({
-  body: Joi.object()
-}), (req, res) => {
-  console.log('tested!');
-});
-
 app.put('/survey', validate({
   body: Joi.object()/*.keys({
     data: Joi.object(),
@@ -159,8 +153,11 @@ app.put('/survey', validate({
       callback(new Error('Database connection error'));
       return;
     }
+    var cleaned_json = JSON.stringify(req.body.data);
+    if (cleaned_json.indexOf("'") > -1) {
+      cleaned_json = cleaned_json.replace("'", "''");
+    }
     // Construct query
-    var cleaned_json = JSON.stringify(req.body.data).replace("'", "''");
     var query_string = "INSERT INTO skanda.survey_raw (id, data) VALUES (DEFAULT, '" + cleaned_json + "');";
     var query = client.query(query_string);
     query.on('end', result => {
@@ -169,19 +166,29 @@ app.put('/survey', validate({
   });
 });
 
+// TODO: Handle 'GET' request to recall completed & synced survey
+// CONSTRUCT 'uid' from house/doorNo_location/ward_slum - append to json
+app.put('/recall/:org/:city/:proj/:uid', validate({
+  params: {
+    org: Joi.string(),
+    city: Joi.string(),
+    proj: Joi.string(),
+    uid: Joi.string()
+  }
+}), (req, res) => {
+  console.log('Recalling survey data');
+});
 
 // TODO: Handle 'PUT' request for survey data updates
 // Search within existing table (survey_raw) using queries such as
 // SELECT * FROM skanda.survey_raw WHERE data ->> 'Name' = 'Hari Prasad Chaurasia'
 // refer http://schinckel.net/2014/05/25/querying-json-in-postgres/
 
-
 // TODO: Handle 'POST' request to insert a new questionnaire
 // validation & error checking... json type, questionnaire format, choicelists format???
 // INSERT INTO skanda.survey_questions (questionnaire, choicelists, id, timestamp, version, author, project, city, org)
 // VALUES ('questionnaire.json {}', 'choicelists.json {}', DEFAULT, '2017-05-20 19:15:06', '0.1', 'mayank.ojha', 'testing', 'Cambridge', 'Urban Risk Lab')
 // JSON must be in single quotes, double up single quotes within json text (escape) eg: (don't know becomes don''t know)
-
 
 app.listen(port, (err) => {
   if (err) {
